@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Eclipse classification project</title>
+
+    <link rel="stylesheet" type="text/css" href="/application.css">
+</head>
+<body>
+    <h1>Results</h1>
+    <p>
+        Found <%= Repository.of_interest.count %> repositories of interest <br>
+        Found <%= @combinations.count %> relationships
+    </p>
+    <table border=1>
+        <thead>
+            <tr>
+                <th>Repository</th>
+                <th>Repository</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% @combinations.each do |c| %>
+                <tr>
+                    <td><%= c[:id1] %></td>
+                    <td><%= c[:id2] %></td>
+                </tr>
+            <% end %> 
+        </tbody>
+    </table>
+</body>
+</html>

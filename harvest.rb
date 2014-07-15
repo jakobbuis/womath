@@ -9,7 +9,7 @@ require './models/repository.rb'
 class GitHub
     include HTTParty
     base_uri 'https://api.github.com'
-    headers 'Accept' => 'application/json', 'User-Agent' => 'jakobbuis/darkharvest'
+    headers 'Accept' => 'application/json', 'User-Agent' => 'jakobbuis/womath'
 
     def initialize(user, pass)
         @config = {basic_auth: {username: user, password: pass}}

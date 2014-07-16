@@ -31,11 +31,12 @@ class GitHub
         i = 0
         grab "https://api.github.com/repos/#{user}/#{repository}/commits" do |commit|
             email = commit['commit']['author']['email']
+            name = commit['commit']['author']['name']
 
             # Skip all anonymous entries
             next if /@users.noreply.github.com$/ =~ email
             
-            Person.find_or_create_by(repository: repository, email: email)
+            Person.find_or_create_by(repository: repository, email: email, name: name)
             i += 1
         end
 

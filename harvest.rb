@@ -90,8 +90,10 @@ class GitHub
 end
 
 # Validate input parameters
-if ARGV[0].nil?
-    raise 'Missing repository name as parameter; use as "ruby harvest.rb jakobbuis/womath [-v]"'
+instructions = "Usage: ruby harvest.rb user[/repository] [-v]\n\nExamples:\n -ruby harvest.rb jakobbuis\n -ruby jakobbuis/womath -v"
+if ARGV[0].nil? or ARGV[0] == '-h' or ARGV[0] == '--help'
+    puts instructions
+    exit 1
 end
 
 # Process the options given

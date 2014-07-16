@@ -18,7 +18,7 @@ USE `womath_development`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `persons`
+-- Table structure for table `people`
 --
 
 DROP TABLE IF EXISTS `people`;
@@ -28,8 +28,9 @@ CREATE TABLE `people` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '    ',
   `username` varchar(45) NOT NULL,
   `repository` varchar(45) NOT NULL,
+  `emails` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -41,4 +42,4 @@ CREATE TABLE `people` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-15 19:00:59
+-- Dump completed on 2014-07-16 14:52:09

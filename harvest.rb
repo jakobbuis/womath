@@ -3,6 +3,8 @@ require 'httparty'
 require './config.rb'
 require './database.rb'
 require './models/person.rb'
+require 'net/http'
+require 'uri'
 
 # Basic class for consuming the API
 class GitHub
@@ -27,10 +29,42 @@ class GitHub
         url = "https://api.github.com/repos/#{user}/#{repository}/contributors?anon=false"
 
         # Grab all contributors
-        contributors = self.class.get(url).each do |contributor|
-            Person.create({ repository: "#{user}/#{repository}", username: contributor["login"] })
+        contributors = self.class.get(url, @config).each do |contributor|
+            # Use a convoluted trick to find any e-mailadresses associated with this user
+            # by reading the public activity log
+            activity = self.class.get("https://api.github.com/users/#{contributor['login']}/events/public", @config)
+            emails = extract_emails(activity)
+
+            # Save the person object
+            Person.create({ repository: "#{user}/#{repository}", username: contributor["login"], emails: emails.join(',') })
         end
         puts "Retrieved #{contributors.length} contributors"
+    end
+
+    private
+
+    # Extracts e-mail addresses from an GitHub activity log
+    def extract_emails activity
+        # Extract e-mails
+        emails = []
+        activity.each do |entry|
+            next if entry['type'] != 'PushEvent'
+
+            commits = entry['payload']['commits']
+            commits.each do |commit|
+                emails << commit['author']['email']
+            end
+        end
+
+        # Filter duplicates
+        emails.uniq!
+
+        # Filter emails that are anonimised (i.e. ends on @users.noreply.github.com)
+        emails.reject! { |e| /@users.noreply.github.com$/ =~ e }
+
+        return emails
+    end
+
 
         
         # unless ARGV.include?('--skip-eclipse-repositories')
@@ -66,7 +100,6 @@ class GitHub
         #         end
         #     end        
         # end
-    end
 
     private 
 

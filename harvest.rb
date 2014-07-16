@@ -12,22 +12,23 @@ class GitHub
     base_uri 'https://api.github.com'
     headers 'Accept' => 'application/json', 'User-Agent' => 'jakobbuis/womath'
 
-    def initialize(user, pass)
-        @config = {basic_auth: {username: user, password: pass}}
+    def initialize(options)
+        @config = options
     end
 
     # Gather all repositories from GitHub
     # and store them in the local database
     def execute!
-        # Validate input parameters
-        if ARGV[0].nil?
-            raise 'Missing repository name as parameter; use as "ruby harvest.rb jakobbuis/womath"'
-        end
+        # Determine what to do
+        user = @config[:target][:owner]
+        repository = @config[:target][:repository]
 
-        # Build useful variables
-        user, repository = ARGV[0].split('/')
+        process_repository user, repository, @config[:verbose]
+    end
 
-        # Grab all contributors
+    private
+
+    def process_repository user, repository, verbose = false
         i = 0
         grab "https://api.github.com/repos/#{user}/#{repository}/commits" do |commit|
             email = commit['commit']['author']['email']
@@ -41,10 +42,8 @@ class GitHub
         end
 
         # Report success
-        puts "Done. Grabbed #{i} relevant commits"
+        puts "Done. Grabbed #{i} relevant commits" if verbose
     end
-
-    private
         
     # Utility function to deal with pagination
     def grab (url, &block)
@@ -77,5 +76,23 @@ class GitHub
     end
 end
 
-# Execute the main research process
-GitHub.new($config[:github][:user], $config[:github][:password]).execute!
+# Validate input parameters
+if ARGV[0].nil?
+    raise 'Missing repository name as parameter; use as "ruby harvest.rb jakobbuis/womath [-v]"'
+end
+
+# Process the options given
+options = {
+    basic_auth: {
+        username: $config[:github][:user],
+        password: $config[:github][:password],
+    },
+    target: {
+        owner: ARGV[0].split('/')[0],
+        repository: ARGV[0].split('/')[1],
+    },
+    verbose: (ARGV[1].present? and ARGV[1] == '-v')
+}
+
+# Boot the main process
+GitHub.new(options).execute!

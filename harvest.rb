@@ -19,16 +19,18 @@ class GitHub
     # Gather all repositories from GitHub
     # and store them in the local database
     def execute!
-        # Determine what to do
-        user = @config[:target][:owner]
-        repository = @config[:target][:repository]
-
-        process_repository user, repository, @config[:verbose]
+        if @config[:target][:repository].present?
+            process_repository @config[:target][:owner], @config[:target][:repository], @config[:verbose]
+        else 
+            process_owner @config[:target][:owner], @config[:verbose]
+        end
     end
 
     private
 
     def process_repository user, repository, verbose = false
+        print "Processing #{user}/#{repository}..." if verbose
+
         i = 0
         grab "https://api.github.com/repos/#{user}/#{repository}/commits" do |commit|
             email = commit['commit']['author']['email']
@@ -42,7 +44,18 @@ class GitHub
         end
 
         # Report success
-        puts "Done. Grabbed #{i} relevant commits" if verbose
+        puts "done (#{i} commits)" if verbose
+    end
+
+    def process_owner user, verbose = false
+        puts "Processing all repositories by #{user}.." if verbose
+
+        # Grab all repositories
+        grab "https://api.github.com/users/#{user}/repos" do |repository|
+            process_repository user, repository['name'], verbose
+        end
+
+        puts "Finished processing #{user}. " if verbose
     end
         
     # Utility function to deal with pagination

@@ -26,139 +26,47 @@ class GitHub
 
         # Build useful variables
         user, repository = ARGV[0].split('/')
-        url = "https://api.github.com/repos/#{user}/#{repository}/contributors?anon=false"
 
         # Grab all contributors
-        contributors = self.class.get(url, @config).each do |contributor|
-            # Use a convoluted trick to find any e-mailadresses associated with this user
-            # by reading the public activity log
-            activity = self.class.get("https://api.github.com/users/#{contributor['login']}/events/public", @config)
-            emails = extract_emails(activity)
+        i = 0
+        grab "https://api.github.com/repos/#{user}/#{repository}/commits" do |commit|
+            email = commit['commit']['author']['email']
 
-            # Save the person object
-            Person.create({ repository: "#{user}/#{repository}", username: contributor["login"], emails: emails.join(',') })
+            # Skip all anonymous entries
+            next if /@users.noreply.github.com$/ =~ email
+            
+            Person.find_or_create_by(repository: repository, email: email)
+            i += 1
         end
-        puts "Retrieved #{contributors.length} contributors"
+
+        # Report success
+        puts "Done. Grabbed #{i} committers"
     end
 
     private
-
-    # Extracts e-mail addresses from an GitHub activity log
-    def extract_emails activity
-        # Extract e-mails
-        emails = []
-        activity.each do |entry|
-            next if entry['type'] != 'PushEvent'
-
-            commits = entry['payload']['commits']
-            commits.each do |commit|
-                emails << commit['author']['email']
-            end
-        end
-
-        # Filter duplicates
-        emails.uniq!
-
-        # Filter emails that are anonimised (i.e. ends on @users.noreply.github.com)
-        emails.reject! { |e| /@users.noreply.github.com$/ =~ e }
-
-        return emails
-    end
-
-
         
-        # unless ARGV.include?('--skip-eclipse-repositories')
-        #     # Find the Eclipse foundation
-        #     eclipse = self.class.get('https://api.github.com/orgs/eclipse', @config)
+    # Utility function to deal with pagination
+    def grab (url, &block)
+        page = 1
+        results = []
+        while true
+            puts "Debug: now on #{url} page ##{page}"
 
-        #     # Grab each Eclipse repository and store it
-        #     grab eclipse['repos_url'] do |repository|
-        #         store_repository repository
-        #     end
-        # end
+            # Grab a page of repositories
+            response = self.class.get(url+'?per_page=100&page='+page.to_s, @config)
 
-        # unless ARGV.include?('--skip-contributors')
-        #     # Gather the contributors of every repository
-        #     puts "Debug: now getting contributors"
-        #     Repository.all.each do |repository|
-        #         # Note: normally, one would call the repository details page (e.g. api.github.com/repos/123)
-        #         # to find the the contributors_url, but that takes an extra request against our rate limit
-        #         # As this study is limited in scope (regarding time), we assume the GitHub API doesn't change
-        #         self.class.get("#{repository.url}/contributors", @config).each do |c|
-        #             contributor = store_contributor c
-        #             store_work(contributor, repository) if contributor && repository
-        #         end
-        #     end
-        # end
+            # Apply the callback to each elements
+            response.each do |r|
+                block.call(r)
+            end
 
-        # unless ARGV.include?('--skip-contributor-repositories')
-        #     # Grab all repositories of every contributor
-        #     Contributor.all.each do |contributor|
-        #         grab "#{contributor['url']}/repos" do |r|
-        #             repository = store_repository r
-        #             store_work(contributor, repository) if contributor && repository
-        #         end
-        #     end        
-        # end
-
-    private 
-
-    # # Utility function to deal with pagination
-    # def grab (url, &block)
-    #     page = 1
-    #     results = []
-    #     while true
-    #         puts "Debug: now on #{url} page ##{page}"
-
-    #         # Grab a page of repositories
-    #         response = self.class.get(url+'?per_page=100&page='+page.to_s, @config)
-
-    #         # Apply the callback to each elements
-    #         response.each do |r|
-    #             block.call(r)
-    #         end
-
-    #         # Stop if we are at the end of the list
-    #         break if response.count < 100
+            # Stop if we are at the end of the list
+            break if response.count < 100
             
-    #         # else continue
-    #         page += 1
-    #     end
-    # end
-
-    # # Utility function that stores the relevant data of a repository automatically
-    # def store_repository data
-    #     repository = Repository.find_or_initialize_by(github_id: data['id'])
-    #     repository.update_attributes({
-    #         github_id: data['id'],
-    #         url: data['url'],
-    #         name: data['full_name'],
-    #         description: data['description'],
-    #     })
-    #     repository
-    # end
-
-    # # Utility function that stores the relevant data of a contributor automatically
-    # def store_contributor data
-    #     return nil unless data['id'].present? and data['url'].present?
-
-    #     contributor = Contributor.find_or_initialize_by(github_id: data['id'])
-    #     contributor.update_attributes({
-    #         github_id: data['id'],
-    #         url: data['url'],
-    #     })
-    #     contributor
-    # end
-
-    # # Utility functions that stores the relationship between a contributor and a repository
-    # def store_work contributor, repository
-    #     # Do not save if the association exists already
-    #     return if repository.contributors.where(id: contributor.id).exists?
-
-    #     # Store otherwise
-    #     repository.contributors << contributor
-    #     repository.save
-    # end
+            # else continue
+            page += 1
+        end
+    end
 
     # Override get method to take the rate limiter into account
     def self.get(*args, &block)

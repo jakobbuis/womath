@@ -26,11 +26,10 @@ DROP TABLE IF EXISTS `people`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `people` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '    ',
-  `username` varchar(45) NOT NULL,
-  `repository` varchar(45) NOT NULL,
-  `emails` varchar(255) DEFAULT NULL,
+  `repository` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=67 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -42,4 +41,4 @@ CREATE TABLE `people` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-07-16 14:52:09
+-- Dump completed on 2014-07-16 15:36:03

@@ -1,10 +1,10 @@
-CREATE DATABASE  IF NOT EXISTS `darkharvest` /*!40100 DEFAULT CHARACTER SET utf8 */;
-USE `darkharvest`;
--- MySQL dump 10.13  Distrib 5.5.35, for debian-linux-gnu (x86_64)
+CREATE DATABASE  IF NOT EXISTS `womath_development` /*!40100 DEFAULT CHARACTER SET utf8 */;
+USE `womath_development`;
+-- MySQL dump 10.13  Distrib 5.5.37, for debian-linux-gnu (x86_64)
 --
--- Host: 127.0.0.1    Database: darkharvest
+-- Host: 127.0.0.1    Database: womath_development
 -- ------------------------------------------------------
--- Server version	5.5.35-0ubuntu0.13.10.2
+-- Server version   5.5.37-0ubuntu0.14.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -18,49 +18,18 @@ USE `darkharvest`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `contributors`
+-- Table structure for table `persons`
 --
 
-DROP TABLE IF EXISTS `contributors`;
+DROP TABLE IF EXISTS `people`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `contributors` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `github_id` varchar(45) NOT NULL,
-  `url` varchar(255) NOT NULL,
+CREATE TABLE `people` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '    ',
+  `username` varchar(45) NOT NULL,
+  `repository` varchar(45) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=733 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `contributors_repositories`
---
-
-DROP TABLE IF EXISTS `contributors_repositories`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `contributors_repositories` (
-  `contributor_id` int(11) NOT NULL,
-  `repository_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `repositories`
---
-
-DROP TABLE IF EXISTS `repositories`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `repositories` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `github_id` varchar(45) NOT NULL,
-  `url` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text,
-  `classification` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10309 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -72,4 +41,4 @@ CREATE TABLE `repositories` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-03-18 16:45:10
+-- Dump completed on 2014-07-15 19:00:59

@@ -36,9 +36,6 @@ class GitHub
             email = commit['commit']['author']['email']
             name = commit['commit']['author']['name']
 
-            # Skip all anonymous entries
-            next if /@users.noreply.github.com$/ =~ email
-            
             Person.find_or_create_by(repository: repository, email: email, name: name)
             i += 1
         end

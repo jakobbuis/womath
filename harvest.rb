@@ -40,7 +40,7 @@ class GitHub
         end
 
         # Report success
-        puts "Done. Grabbed #{i} committers"
+        puts "Done. Grabbed #{i} relevant commits"
     end
 
     private
@@ -50,8 +50,6 @@ class GitHub
         page = 1
         results = []
         while true
-            puts "Debug: now on #{url} page ##{page}"
-
             # Grab a page of repositories
             response = self.class.get(url+'?per_page=100&page='+page.to_s, @config)
 

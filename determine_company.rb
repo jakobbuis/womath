@@ -17,10 +17,13 @@ class DetermineCompany
 
         Person.find_each do |person|
             # Only proceed if we have an e-mail address we can parse
-            next unless /.*@.*\..*/.match person.email
+            next unless /.*@.+\..+/.match person.email
 
             # Extract domain
             domain = /.*@(.*)/.match(person.email)[1]
+
+            # Do not process IP addresses
+            next if /^[0-9\.]+$/.match domain
 
             # Extract most-significant domain part
             # 1) If the domain is two parts long, choose the first
@@ -35,6 +38,7 @@ class DetermineCompany
                 ci = parts.pop
                 ci = parts.pop if ci.length == 2
             end
+
             person.update_attribute :company_identifier, ci
         end
     end

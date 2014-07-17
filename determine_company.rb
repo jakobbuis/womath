@@ -7,8 +7,9 @@ require './models/person.rb'
 # Basic class for consuming the API
 class DetermineCompany
 
-    def initialize(verbose)
+    def initialize(verbose, known_email_providers)
         @verbose = verbose
+        @known_email_providers = known_email_providers
     end
 
     def execute!
@@ -24,6 +25,9 @@ class DetermineCompany
 
             # Do not process IP addresses
             next if /^[0-9\.]+$/.match domain
+
+            # Do not process e-mails addresses from provider (e.g. @gmail.com, @hotmail.com)
+            next if @known_email_providers.include? domain
 
             # Extract most-significant domain part
             # 1) If the domain is two parts long, choose the first
@@ -54,5 +58,7 @@ end
 # Process the options given
 verbose = (ARGV[0].present? and ARGV[0] == '-v')
 
+known_email_providers = JSON.parse(File.read('known_email_providers.json'))
+
 # Boot the main process
-DetermineCompany.new(verbose).execute!
+DetermineCompany.new(verbose, known_email_providers).execute!

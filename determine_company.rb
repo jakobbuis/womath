@@ -14,20 +14,32 @@ class DetermineCompany
 
     def execute!
         # Start with a clean slate
+        print "Clearing all company_identifier and company_name fields..." if @verbose
         Person.update_all company_identifier: nil, company_name: nil
+        puts 'done' if @verbose
 
+        puts "Starting classification..." if @verbose
         Person.find_each do |person|
             # Only proceed if we have an e-mail address we can parse
-            next unless /.*@.+\..+/.match person.email
+            unless /.*@.+\..+/.match person.email
+                puts "Rejected #{person.email}: not a parseable e-mail address" if @verbose
+                next
+            end
 
             # Extract domain
             domain = /.*@(.*)/.match(person.email)[1]
 
             # Do not process IP addresses
-            next if /^[0-9\.]+$/.match domain
+            if /^[0-9\.]+$/.match domain
+                puts "Rejected #{person.email}: is an IP-address" if @verbose
+                next
+            end
 
             # Do not process e-mails addresses from provider (e.g. @gmail.com, @hotmail.com)
-            next if @known_email_providers.include? domain
+            if @known_email_providers.include? domain
+                puts "Rejected #{person.email}: is a known e-mail provider" if @verbose
+                next
+            end
 
             # Extract most-significant domain part
             # 1) If the domain is two parts long, choose the first
@@ -44,7 +56,9 @@ class DetermineCompany
             end
 
             person.update_attribute :company_identifier, ci
+            puts "Classified #{person.email} as #{ci}"
         end
+        puts "Classification finished. #{Person.classified.count}/#{Person.count} successful (#{(Person.classified.count.to_f/Person.count.to_f*100).round}%)" if @verbose
     end
 end
 

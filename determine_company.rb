@@ -7,8 +7,8 @@ require './models/person.rb'
 # Basic class for consuming the API
 class DetermineCompany
 
-    def initialize(options)
-        @options = options
+    def initialize(verbose)
+        @verbose = verbose
     end
 
     def execute!
@@ -52,9 +52,7 @@ if ARGV[0] == '-h' or ARGV[0] == '--help'
 end
 
 # Process the options given
-options = {
-    verbose: (ARGV[0].present? and ARGV[0] == '-v')
-}
+verbose = (ARGV[0].present? and ARGV[0] == '-v')
 
 # Boot the main process
-DetermineCompany.new(options).execute!
+DetermineCompany.new(verbose).execute!

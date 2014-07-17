@@ -59,33 +59,39 @@ class DetermineCompany
                 company_identifier = parts.pop if company_identifier.length == 2
             end
 
-            # Find company name by reading its website
-            # use a Hash as cache to prevent repeating nokogiri calls
-            company_name = company_identifier.capitalize
-            if @domain_name_cache.include? domain
-                company_name = @domain_name_cache[domain]
-            else
-                begin
-                    # Attempt to download the website
-                    website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
-
-                    # Grab consecutive capitalised words in the title of the page
-                    title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
-                    company_name = title[0][0..45] if title
-                rescue SocketError, Errno::ETIMEDOUT, OpenURI::HTTPError
-                    # Do nothing, company_name is still nil here (which is what we want)
-                end
-                # Store in cache to avoid future double calls
-                @domain_name_cache[domain] = company_name
+            # Find the company on their website
+            company_name = find_company_name_on domain
+            if !company_name
+                company_name = company_identifier.capitalize 
             end
 
             # Save results
-            person.company_identifier = company_identifier
-            person.company_name = company_name
-            person.save
+            person.update_attributes company_identifier: company_identifier, company_name: company_name
             puts "works at #{company_name}"
         end
         puts "Classification finished. #{Person.classified.count}/#{Person.count} successful (#{(Person.classified.count.to_f/Person.count.to_f*100).round}%)" if @verbose
+    end
+
+    private
+
+    def find_company_name_on domain
+        return @domain_name_cache[domain] if @domain_name_cache.include? domain
+        
+        name = nil
+        begin
+            # Attempt to download the website
+            website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
+
+            # Grab consecutive capitalised words in the title of the page
+            title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
+            name = title[0][0..45] if title
+        rescue SocketError, Errno::ETIMEDOUT, OpenURI::HTTPError
+        end
+
+        # Store in cache to avoid future double calls
+        @domain_name_cache[domain] = name
+        
+        return name
     end
 end
 

@@ -7,6 +7,7 @@ gem 'sinatra', '~> 1.4.4'
 gem 'activerecord', '~> 4.0.3'
 gem 'mysql2', '~> 0.3.15'
 gem 'json', '~> 1.8.1'
+gem 'nokogiri', '~> 1.6.2.1'
 
 group :development do
     gem 'guard', '~> 2.6.1'

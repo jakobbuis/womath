@@ -8,3 +8,7 @@ CREATE TABLE `people` (
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 );
+
+ALTER TABLE `womath_development`.`people` 
+ADD COLUMN `company_identifier` VARCHAR(45) NULL AFTER `name`,
+ADD COLUMN `company_name` VARCHAR(45) NULL AFTER `company_identifier`;

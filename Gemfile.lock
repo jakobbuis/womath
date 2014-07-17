@@ -49,6 +49,7 @@ GEM
     mysql2 (0.3.16)
     nokogiri (1.6.2.1)
       mini_portile (= 0.6.0)
+    open_uri_redirections (0.1.4)
     pry (0.10.0)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -81,4 +82,5 @@ DEPENDENCIES
   json (~> 1.8.1)
   mysql2 (~> 0.3.15)
   nokogiri (~> 1.6.2.1)
+  open_uri_redirections (~> 0.1.4)
   sinatra (~> 1.4.4)

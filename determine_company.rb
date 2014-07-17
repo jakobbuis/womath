@@ -1,8 +1,10 @@
 require 'bundler/setup'
 require 'nokogiri'
+require 'open-uri'
 require './config.rb'
 require './database.rb'
 require './models/person.rb'
+require 'open_uri_redirections'
 
 # Basic class for consuming the API
 class DetermineCompany
@@ -10,6 +12,7 @@ class DetermineCompany
     def initialize(verbose, known_email_providers)
         @verbose = verbose
         @known_email_providers = known_email_providers
+        @domain_name_cache = {}
     end
 
     def execute!
@@ -47,16 +50,38 @@ class DetermineCompany
             # 3) If the domain is three parts or longer, choose the second to last part 
             parts = domain.split('.')
             parts.pop # Remove the last part
-
             if parts.length == 1
-                ci = parts[0]
+                company_identifier = parts[0]
             else
-                ci = parts.pop
-                ci = parts.pop if ci.length == 2
+                company_identifier = parts.pop
+                company_identifier = parts.pop if company_identifier.length == 2
             end
 
-            person.update_attribute :company_identifier, ci
-            puts "Classified #{person.email} as #{ci}"
+            # Find company name by reading its website
+            # use a Hash as cache to prevent repeating nokogiri calls
+            company_name = company_identifier.capitalize
+            if @domain_name_cache.include? domain
+                company_name = @domain_name_cache[domain]
+            else
+                begin
+                    # Attempt to download the website
+                    website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
+
+                    # Grab consecutive capitalised words in the title of the page
+                    title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
+                    company_name = title[0] if title
+                rescue SocketError, Errno::ETIMEDOUT
+                    # Do nothing, company_name is still nil here (which is what we want)
+                end
+                # Store in cache to avoid future double calls
+                @domain_name_cache[domain] = company_name
+            end
+
+            # Save results
+            person.company_identifier = company_identifier
+            person.company_name = company_name
+            person.save
+            puts "#{person.email} works at #{company_name} (#{company_identifier})"
         end
         puts "Classification finished. #{Person.classified.count}/#{Person.count} successful (#{(Person.classified.count.to_f/Person.count.to_f*100).round}%)" if @verbose
     end

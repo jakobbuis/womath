@@ -3,8 +3,6 @@ require 'httparty'
 require './config.rb'
 require './database.rb'
 require './models/person.rb'
-require 'net/http'
-require 'uri'
 
 # Basic class for consuming the API
 class GitHub

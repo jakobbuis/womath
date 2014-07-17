@@ -63,6 +63,9 @@ class GitHub
             # Grab a page of repositories
             response = self.class.get(url+'?per_page=100&page='+page.to_s, @config)
 
+            # Do not capture repositories that return HTTP errors (empty repositories do this)
+            break if response.code >= 400
+
             # Apply the callback to each elements
             response.each do |r|
                 block.call(r)

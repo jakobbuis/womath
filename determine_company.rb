@@ -77,21 +77,36 @@ class DetermineCompany
     def find_company_name_on domain
         return @domain_name_cache[domain] if @domain_name_cache.include? domain
         
-        name = nil
-        begin
-            # Attempt to download the website
-            website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
+        name = grab_webpage domain
 
-            # Grab consecutive capitalised words in the title of the page
-            title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
-            name = title[0][0..45] if title
-        rescue SocketError, Errno::ETIMEDOUT, OpenURI::HTTPError
+        unless name
+            # Keep trying shorter domain names until you find a name or run out of domain names
+            until domain.split('.').length == 1 || name.present?
+                domain_parts = domain.split('.')
+                domain_parts.shift
+                domain = domain_parts.join('.')
+                name = grab_webpage domain
+            end
         end
 
         # Store in cache to avoid future double calls
         @domain_name_cache[domain] = name
         
         return name
+    end
+
+    def grab_webpage domain
+        begin
+            # Attempt to download the website
+            website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
+
+            # Grab consecutive capitalised words in the title of the page
+            title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
+            return title[0][0..45] if title
+        rescue SocketError, Errno::ETIMEDOUT, OpenURI::HTTPError
+        end
+
+        return nil
     end
 end
 

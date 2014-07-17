@@ -5,7 +5,7 @@ require './database.rb'
 require './models/person.rb'
 
 # Basic class for consuming the API
-class GitHub
+class Harvest
     include HTTParty
     base_uri 'https://api.github.com'
     headers 'Accept' => 'application/json', 'User-Agent' => 'jakobbuis/womath'
@@ -108,4 +108,4 @@ options = {
 }
 
 # Boot the main process
-GitHub.new(options).execute!
+Harvest.new(options).execute!

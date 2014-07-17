@@ -23,9 +23,11 @@ class DetermineCompany
 
         puts "Starting classification..." if @verbose
         Person.find_each do |person|
+            print "Processing #{person.email}..." if @verbose
+
             # Only proceed if we have an e-mail address we can parse
             unless /.*@.+\..+/.match person.email
-                puts "Rejected #{person.email}: not a parseable e-mail address" if @verbose
+                puts "rejected: not a parseable e-mail address" if @verbose
                 next
             end
 
@@ -34,13 +36,13 @@ class DetermineCompany
 
             # Do not process IP addresses
             if /^[0-9\.]+$/.match domain
-                puts "Rejected #{person.email}: is an IP-address" if @verbose
+                puts "rejected: is an IP-address" if @verbose
                 next
             end
 
             # Do not process e-mails addresses from provider (e.g. @gmail.com, @hotmail.com)
             if @known_email_providers.include? domain
-                puts "Rejected #{person.email}: is a known e-mail provider" if @verbose
+                puts "rejected: is a known e-mail provider" if @verbose
                 next
             end
 
@@ -81,7 +83,7 @@ class DetermineCompany
             person.company_identifier = company_identifier
             person.company_name = company_name
             person.save
-            puts "#{person.email} works at #{company_name} (#{company_identifier})"
+            puts "works at #{company_name}"
         end
         puts "Classification finished. #{Person.classified.count}/#{Person.count} successful (#{(Person.classified.count.to_f/Person.count.to_f*100).round}%)" if @verbose
     end

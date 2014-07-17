@@ -71,8 +71,8 @@ class DetermineCompany
 
                     # Grab consecutive capitalised words in the title of the page
                     title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
-                    company_name = title[0] if title
-                rescue SocketError, Errno::ETIMEDOUT
+                    company_name = title[0][0..45] if title
+                rescue SocketError, Errno::ETIMEDOUT, OpenURI::HTTPError
                     # Do nothing, company_name is still nil here (which is what we want)
                 end
                 # Store in cache to avoid future double calls

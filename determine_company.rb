@@ -5,6 +5,7 @@ require './config.rb'
 require './database.rb'
 require './models/person.rb'
 require 'open_uri_redirections'
+require 'timeout'
 
 # Basic class for consuming the API
 class DetermineCompany
@@ -97,13 +98,15 @@ class DetermineCompany
 
     def grab_webpage domain
         begin
-            # Attempt to download the website
-            website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
+            Timeout::timeout 10 do
+                # Attempt to download the website
+                website = Nokogiri::HTML(open("http://#{domain}", allow_redirections: :safe))
 
-            # Grab consecutive capitalised words in the title of the page
-            title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
-            return title[0][0..45] if title
-        rescue SocketError, Errno::ETIMEDOUT, OpenURI::HTTPError
+                # Grab consecutive capitalised words in the title of the page
+                title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
+                return title[0][0..45] if title
+            end
+        rescue Exception
         end
 
         return nil

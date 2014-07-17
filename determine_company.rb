@@ -104,7 +104,7 @@ class DetermineCompany
 
                 # Grab consecutive capitalised words in the title of the page
                 title = /([A-Z][\w-]*(\s+[A-Z][\w-]*)+)/.match(website.search('title').text)
-                return title[0][0..45] if title
+                return title[0][0..40].strip if title
             end
         rescue Exception
         end

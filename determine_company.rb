@@ -48,7 +48,7 @@ class DetermineCompany
 
             # Only proceed if we have an e-mail address we can parse
             unless /.*@.+\..+/.match person.email
-                reject(person, 'not a parseable e-mail address')
+                reject(person, :email_format_invalid, 'not a parseable e-mail address')
                 next
             end
 
@@ -57,7 +57,7 @@ class DetermineCompany
 
             # Do not process IP addresses
             if /^[0-9\.]+$/.match domain
-                reject(person, 'is an IP-address')
+                reject(person, :domain_IP_address, 'is an IP-address')
                 next
             end
 
@@ -65,13 +65,13 @@ class DetermineCompany
             begin
                 root_domain = PublicSuffix.parse(domain).domain
             rescue PublicSuffix::DomainInvalid
-                reject(person, 'invalid TLD')
+                reject(person, :invalid_TLD, 'invalid TLD')
                 next
             end
 
             # Do not process e-mails addresses from known providers (e.g. @gmail.com, @hotmail.com)
             if @known_email_providers.include? root_domain
-                reject(person, 'is a known e-mail provider')
+                reject(person, :known_email_provider, 'is a known e-mail provider')
                 next
             end
 
@@ -138,7 +138,8 @@ class DetermineCompany
         puts "#{person.email} works at #{name}" if @verbose
     end
 
-    def reject person, message
+    def reject person, error_code, message
+        person.update_attribute 'error', error_code
         puts "#{person.email} rejected: #{message}" if @verbose
     end
 

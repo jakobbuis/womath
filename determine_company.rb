@@ -8,6 +8,7 @@ require 'open_uri_redirections'
 require 'timeout'
 require 'unirest'
 require 'oauth'
+require 'public_suffix'
 
 # Basic class for consuming the API
 class DetermineCompany
@@ -60,14 +61,18 @@ class DetermineCompany
                 next
             end
 
+            # Determine the domain root based on the list of public suffixes
+            root_domain = PublicSuffix.parse(domain).domain
+
             # Do not process e-mails addresses from known providers (e.g. @gmail.com, @hotmail.com)
-            if @known_email_providers.include? domain
+            if @known_email_providers.include? root_domain
                 reject(person, 'is a known e-mail provider')
                 next
             end
 
+
             # Attempt: Use the LinkedIn-API to find the company name
-            response = get_linkedin_for domain
+            response = get_linkedin_for root_domain
             if response.code == '200'
                 companies = JSON.parse(response.body)['values']
                 # Use the shortest one (deals with things like ["Microsoft", "Microsoft India", "Microsoft France"])
@@ -81,7 +86,7 @@ class DetermineCompany
             end
 
             # Attempt: Use a WHOIS API to find the company name
-            response = get_whois_for domain
+            response = get_whois_for root_domain
             if response.code == 200
                 # Determine which field to use
                 if response.body['registrant'] and response.body['registrant']['organization']
@@ -98,26 +103,14 @@ class DetermineCompany
             end
 
             # Attempt: find the company name on their website
-            company_name = find_company_name_on domain
+            company_name = find_company_name_on root_domain
             if company_name
                 store_result(person, company_name)
                 next
             end
             
-            # Attempt: extract most-significant domain part and capitalize
-            # 1) If the domain is two parts long, choose the first
-            # 2) If the domain is three parts or longer and the second part is two characters, choose the first
-            # 3) If the domain is three parts or longer, choose the second to last part 
-            parts = domain.split('.')
-            parts.pop # Remove the last part
-            if parts.length == 1
-                company_identifier = parts[0]
-            else
-                company_identifier = parts.pop
-                company_identifier = parts.pop if company_identifier.length == 2
-            end
-            store_result(person, company_identifier.capitalize)
-            next
+            # Attempt: last resort, extract most-significant domain part and capitalize
+            store_result(person, PublicSuffix.parse(domain).sld)
         end
 
         # Report success

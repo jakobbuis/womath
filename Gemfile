@@ -11,6 +11,7 @@ gem 'nokogiri', '~> 1.6.2.1'
 gem 'open_uri_redirections', '~> 0.1.4'
 gem 'unirest', '~> 1.1.2'
 gem 'oauth', '~> 0.4.7'
+gem 'public_suffix', '~> 1.4.4'
 
 group :development do
     gem 'guard', '~> 2.6.1'

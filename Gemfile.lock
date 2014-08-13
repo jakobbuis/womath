@@ -57,6 +57,7 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
+    public_suffix (1.4.4)
     rack (1.5.2)
     rack-protection (1.5.3)
       rack
@@ -96,5 +97,6 @@ DEPENDENCIES
   nokogiri (~> 1.6.2.1)
   oauth (~> 0.4.7)
   open_uri_redirections (~> 0.1.4)
+  public_suffix (~> 1.4.4)
   sinatra (~> 1.4.4)
   unirest (~> 1.1.2)

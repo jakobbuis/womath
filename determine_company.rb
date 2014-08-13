@@ -21,6 +21,7 @@ class DetermineCompany
         @cache = {
             website: {},
             whois: {},
+            linkedin: {},
         }
 
         # Instantiate OAuth consumer for LinkedIn
@@ -60,10 +61,17 @@ class DetermineCompany
             end
 
             # Attempt: Use the LinkedIn-API to find the company name
-            company_name = get_linkedin_for domain
-            if company_name
-                person.update_attribute 'company_name', company_name
-                puts "works at #{company_name}" if @verbose
+            response = get_linkedin_for domain
+            if response.code == '200'
+                companies = JSON.parse(response.body)['values']
+                # Use the shortest one (deals with things like ["Microsoft", "Microsoft India", "Microsoft France"])
+                candidate_name = companies[0]['name']
+                companies.each do |companies|
+                    candidate_name = companies['name'] if companies['name'].length < candidate_name.length
+                end
+
+                person.update_attribute 'company_name', candidate_name
+                puts "works at #{candidate_name}" if @verbose
                 next
             end
 
@@ -162,19 +170,10 @@ class DetermineCompany
     end
 
     def get_linkedin_for domain
-        # Make call to LinkedIn to retrieve candidate companies
-        response = @linkedin.get("http://api.linkedin.com/v1/companies?email-domain=#{domain}&format=json")
-        return false unless response.code == '200'
-
-        companies = JSON.parse(response.body)['values']
-
-        # Use the shortest one (deals with things like ["Microsoft", "Microsoft India", "Microsoft France"])
-        candidate_name = companies[0]['name']
-        companies.each do |companies|
-            candidate_name = companies['name'] if companies['name'].length < candidate_name.length
+        unless @cache[:linkedin].include? domain
+            @cache[:linkedin][domain] = @linkedin.get("http://api.linkedin.com/v1/companies?email-domain=#{domain}&format=json")
         end
-
-        return candidate_name
+        @cache[:linkedin][domain]
     end
 end
 

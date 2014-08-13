@@ -7,6 +7,7 @@ require './models/person.rb'
 require 'open_uri_redirections'
 require 'timeout'
 require 'unirest'
+require 'oauth'
 
 # Basic class for consuming the API
 class DetermineCompany
@@ -19,6 +20,10 @@ class DetermineCompany
 
         @domain_name_cache = {}
         @whois_cache = {}
+
+        # Instantiate OAuth consumer for LinkedIn
+        consumer = OAuth::Consumer.new($config[:linkedin][:api_key], $config[:linkedin][:api_secret], {site: 'https://api.linkedin.com'})
+        @linkedin = OAuth::AccessToken.new(consumer, $config[:linkedin][:user_token], $config[:linkedin][:user_secret])
     end
 
     def execute!
@@ -46,13 +51,21 @@ class DetermineCompany
                 next
             end
 
-            # Do not process e-mails addresses from provider (e.g. @gmail.com, @hotmail.com)
+            # Do not process e-mails addresses from known providers (e.g. @gmail.com, @hotmail.com)
             if @known_email_providers.include? domain
                 puts "rejected: is a known e-mail provider" if @verbose
                 next
             end
 
-            # Use a WHOIS API to find the company name
+            # Attempt: Use the LinkedIn-API to find the company name
+            company_name = get_linkedin_for domain
+            if company_name
+                person.update_attribute 'company_name', company_name
+                puts "works at #{company_name}" if @verbose
+                next
+            end
+
+            # Attempt: Use a WHOIS API to find the company name
             response = get_whois_for domain
             if response.code == 200
                 # Determine which field to use
@@ -71,7 +84,7 @@ class DetermineCompany
                 end
             end
 
-            # Fallback: find the company name on their website
+            # Attempt: find the company name on their website
             company_name = find_company_name_on domain
             if company_name
                 person.update_attribute 'company_name', company_name
@@ -79,7 +92,7 @@ class DetermineCompany
                 next
             end
             
-            # Fallback: extract most-significant domain part and capitalize
+            # Attempt: extract most-significant domain part and capitalize
             # 1) If the domain is two parts long, choose the first
             # 2) If the domain is three parts or longer and the second part is two characters, choose the first
             # 3) If the domain is three parts or longer, choose the second to last part 
@@ -144,6 +157,22 @@ class DetermineCompany
             @whois_cache[domain] = Unirest.get("https://nametoolkit-name-toolkit.p.mashape.com/v1/whois?q=#{domain}")
         end
         @whois_cache[domain]
+    end
+
+    def get_linkedin_for domain
+        # Make call to LinkedIn to retrieve candidate companies
+        response = @linkedin.get("http://api.linkedin.com/v1/companies?email-domain=#{domain}&format=json")
+        return false unless response.code == '200'
+
+        companies = JSON.parse(response.body)['values']
+
+        # Use the shortest one (deals with things like ["Microsoft", "Microsoft India", "Microsoft France"])
+        candidate_name = companies[0]['name']
+        companies.each do |companies|
+            candidate_name = companies['name'] if companies['name'].length < candidate_name.length
+        end
+
+        return candidate_name
     end
 end
 

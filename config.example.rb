@@ -11,6 +11,12 @@ $config = {
         password:  '1234',
     },
     mashape: {
-        api_key: "abcde",
+        api_key: 'abcde',
+    },
+    linkedin: {
+        api_key:     'abcde',
+        api_secret:  'abcde',
+        user_token:  'abcde',
+        user_secret: 'abcde',
     },
 }

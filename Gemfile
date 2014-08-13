@@ -9,6 +9,7 @@ gem 'mysql2', '~> 0.3.15'
 gem 'json', '~> 1.8.1'
 gem 'nokogiri', '~> 1.6.2.1'
 gem 'open_uri_redirections', '~> 0.1.4'
+gem 'unirest', '~> 1.1.2'
 
 group :development do
     gem 'guard', '~> 2.6.1'

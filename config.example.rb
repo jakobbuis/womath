@@ -10,4 +10,7 @@ $config = {
         database:  'darkharvest',
         password:  '1234',
     },
+    mashape: {
+        api_key: "abcde",
+    },
 }

@@ -6,14 +6,19 @@ require './database.rb'
 require './models/person.rb'
 require 'open_uri_redirections'
 require 'timeout'
+require 'unirest'
 
 # Basic class for consuming the API
 class DetermineCompany
 
-    def initialize(verbose, known_email_providers)
+    def initialize(verbose, known_email_providers, mashape_api_key)
         @verbose = verbose
         @known_email_providers = known_email_providers
+
+        Unirest.default_header 'X-Mashape-Key', mashape_api_key
+
         @domain_name_cache = {}
+        @whois_cache = {}
     end
 
     def execute!
@@ -47,7 +52,34 @@ class DetermineCompany
                 next
             end
 
-            # Extract most-significant domain part
+            # Use a WHOIS API to find the company name
+            response = get_whois_for domain
+            if response.code == 200
+                # Determine which field to use
+                if response.body['registrant'] and response.body['registrant']['organization']
+                    company_name = response.body['registrant']['organization']
+                elsif response.body['administrative_contact'] and response.body['administrative_contact']['organization']
+                    company_name = response.body['administrative_contact']['organization']
+                end
+
+                # Store result if successful
+                if company_name
+                    company_name = company_name[0..40] 
+                    person.update_attribute 'company_name', company_name
+                    puts "works at #{company_name}" if @verbose
+                    next
+                end
+            end
+
+            # Fallback: find the company name on their website
+            company_name = find_company_name_on domain
+            if company_name
+                person.update_attribute 'company_name', company_name
+                puts "works at #{company_name}" if @verbose
+                next
+            end
+            
+            # Fallback: extract most-significant domain part and capitalize
             # 1) If the domain is two parts long, choose the first
             # 2) If the domain is three parts or longer and the second part is two characters, choose the first
             # 3) If the domain is three parts or longer, choose the second to last part 
@@ -59,17 +91,12 @@ class DetermineCompany
                 company_identifier = parts.pop
                 company_identifier = parts.pop if company_identifier.length == 2
             end
-
-            # Find the company on their website
-            company_name = find_company_name_on domain
-            if !company_name
-                company_name = company_identifier.capitalize 
-            end
-
-            # Save results
+            company_name = company_identifier.capitalize
             person.update_attributes company_identifier: company_identifier, company_name: company_name
-            puts "works at #{company_name}"
+            puts "works at #{company_name}" if @verbose
         end
+
+        # Report success
         puts "Classification finished. #{Person.classified.count}/#{Person.count} successful (#{(Person.classified.count.to_f/Person.count.to_f*100).round}%)" if @verbose
     end
 
@@ -111,6 +138,13 @@ class DetermineCompany
 
         return nil
     end
+
+    def get_whois_for domain
+        unless @whois_cache.include? domain
+            @whois_cache[domain] = Unirest.get("https://nametoolkit-name-toolkit.p.mashape.com/v1/whois?q=#{domain}")
+        end
+        @whois_cache[domain]
+    end
 end
 
 # Validate input parameters
@@ -126,4 +160,4 @@ verbose = (ARGV[0].present? and ARGV[0] == '-v')
 known_email_providers = JSON.parse(File.read('known_email_providers.json'))
 
 # Boot the main process
-DetermineCompany.new(verbose, known_email_providers).execute!
+DetermineCompany.new(verbose, known_email_providers, $config[:mashape][:api_key]).execute!

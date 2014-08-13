@@ -12,3 +12,6 @@ CREATE TABLE `people` (
 ALTER TABLE `womath_development`.`people` 
 ADD COLUMN `company_identifier` VARCHAR(45) NULL AFTER `name`,
 ADD COLUMN `company_name` VARCHAR(45) NULL AFTER `company_identifier`;
+
+ALTER TABLE `womath_development`.`people` 
+DROP COLUMN `company_identifier`;

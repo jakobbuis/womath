@@ -31,17 +31,16 @@ class DetermineCompany
 
     def execute!
         # Start with a clean slate
-        print "Clearing all company_identifier and company_name fields..." if @verbose
-        Person.update_all company_identifier: nil, company_name: nil
+        print "Clearing all company names..." if @verbose
+        Person.update_all company_name: nil
         puts 'done' if @verbose
 
         puts "Starting classification..." if @verbose
         Person.find_each do |person|
-            print "Processing #{person.email}..." if @verbose
 
             # Only proceed if we have an e-mail address we can parse
             unless /.*@.+\..+/.match person.email
-                puts "rejected: not a parseable e-mail address" if @verbose
+                reject(person, 'not a parseable e-mail address')
                 next
             end
 
@@ -50,13 +49,13 @@ class DetermineCompany
 
             # Do not process IP addresses
             if /^[0-9\.]+$/.match domain
-                puts "rejected: is an IP-address" if @verbose
+                reject(person, 'is an IP-address')
                 next
             end
 
             # Do not process e-mails addresses from known providers (e.g. @gmail.com, @hotmail.com)
             if @known_email_providers.include? domain
-                puts "rejected: is a known e-mail provider" if @verbose
+                reject(person, 'is a known e-mail provider')
                 next
             end
 
@@ -70,8 +69,7 @@ class DetermineCompany
                     candidate_name = companies['name'] if companies['name'].length < candidate_name.length
                 end
 
-                person.update_attribute 'company_name', candidate_name
-                puts "works at #{candidate_name}" if @verbose
+                store_result(person, candidate_name)
                 next
             end
 
@@ -87,9 +85,7 @@ class DetermineCompany
 
                 # Store result if successful
                 if company_name
-                    company_name = company_name[0..40] 
-                    person.update_attribute 'company_name', company_name
-                    puts "works at #{company_name}" if @verbose
+                    store_result(person, company_name)
                     next
                 end
             end
@@ -97,8 +93,7 @@ class DetermineCompany
             # Attempt: find the company name on their website
             company_name = find_company_name_on domain
             if company_name
-                person.update_attribute 'company_name', company_name
-                puts "works at #{company_name}" if @verbose
+                store_result(person, company_name)
                 next
             end
             
@@ -114,9 +109,8 @@ class DetermineCompany
                 company_identifier = parts.pop
                 company_identifier = parts.pop if company_identifier.length == 2
             end
-            company_name = company_identifier.capitalize
-            person.update_attributes company_identifier: company_identifier, company_name: company_name
-            puts "works at #{company_name}" if @verbose
+            store_result(person, company_identifier.capitalize)
+            next
         end
 
         # Report success
@@ -124,6 +118,17 @@ class DetermineCompany
     end
 
     private
+
+    def store_result person, name
+        # Always truncate to match max field length (45)
+        name = name[0..40]
+        person.update_attribute 'company_name', name
+        puts "#{person.email} works at #{name}" if @verbose
+    end
+
+    def reject person, message
+        puts "#{person.email} rejected: #{message}" if @verbose
+    end
 
     def find_company_name_on domain
         return @cache[:website][domain] if @cache[:website].include? domain

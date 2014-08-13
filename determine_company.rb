@@ -18,8 +18,10 @@ class DetermineCompany
 
         Unirest.default_header 'X-Mashape-Key', mashape_api_key
 
-        @domain_name_cache = {}
-        @whois_cache = {}
+        @cache = {
+            website: {},
+            whois: {},
+        }
 
         # Instantiate OAuth consumer for LinkedIn
         consumer = OAuth::Consumer.new($config[:linkedin][:api_key], $config[:linkedin][:api_secret], {site: 'https://api.linkedin.com'})
@@ -116,7 +118,7 @@ class DetermineCompany
     private
 
     def find_company_name_on domain
-        return @domain_name_cache[domain] if @domain_name_cache.include? domain
+        return @cache[:website][domain] if @cache[:website].include? domain
         
         name = grab_webpage domain
 
@@ -131,7 +133,7 @@ class DetermineCompany
         end
 
         # Store in cache to avoid future double calls
-        @domain_name_cache[domain] = name
+        @cache[:website][domain] = name
         
         return name
     end
@@ -153,10 +155,10 @@ class DetermineCompany
     end
 
     def get_whois_for domain
-        unless @whois_cache.include? domain
-            @whois_cache[domain] = Unirest.get("https://nametoolkit-name-toolkit.p.mashape.com/v1/whois?q=#{domain}")
+        unless @cache[:whois].include? domain
+            @cache[:whois][domain] = Unirest.get("https://nametoolkit-name-toolkit.p.mashape.com/v1/whois?q=#{domain}")
         end
-        @whois_cache[domain]
+        @cache[:whois][domain]
     end
 
     def get_linkedin_for domain

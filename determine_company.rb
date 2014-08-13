@@ -19,6 +19,7 @@ class DetermineCompany
         Unirest.default_header 'X-Mashape-Key', mashape_api_key
 
         @cache = {
+            email: {},
             website: {},
             whois: {},
             linkedin: {},
@@ -37,6 +38,12 @@ class DetermineCompany
 
         puts "Starting classification..." if @verbose
         Person.find_each do |person|
+
+            # Try to find it in the cache
+            if @cache[:email].include? person.email
+                store_result(person, @cache[:email][person.email])
+                next
+            end
 
             # Only proceed if we have an e-mail address we can parse
             unless /.*@.+\..+/.match person.email
@@ -122,7 +129,14 @@ class DetermineCompany
     def store_result person, name
         # Always truncate to match max field length (45)
         name = name[0..40]
+
+        # Write to cache
+        @cache[:email][person.email] = name
+
+        # Write to database
         person.update_attribute 'company_name', name
+
+        # Output result
         puts "#{person.email} works at #{name}" if @verbose
     end
 

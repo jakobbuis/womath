@@ -62,7 +62,12 @@ class DetermineCompany
             end
 
             # Determine the domain root based on the list of public suffixes
-            root_domain = PublicSuffix.parse(domain).domain
+            begin
+                root_domain = PublicSuffix.parse(domain).domain
+            rescue PublicSuffix::DomainInvalid
+                reject(person, 'invalid TLD')
+                next
+            end
 
             # Do not process e-mails addresses from known providers (e.g. @gmail.com, @hotmail.com)
             if @known_email_providers.include? root_domain

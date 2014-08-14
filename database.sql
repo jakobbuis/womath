@@ -18,3 +18,6 @@ DROP COLUMN `company_identifier`;
 
 ALTER TABLE `womath_development`.`people` 
 ADD COLUMN `error` VARCHAR(45) NULL DEFAULT NULL AFTER `company_name`;
+
+ALTER TABLE `womath_development`.`people` 
+CHANGE COLUMN `error` `status_code` VARCHAR(45) NULL DEFAULT NULL ;

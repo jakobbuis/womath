@@ -33,8 +33,8 @@ class DetermineCompany
 
     def execute!
         # Start with a clean slate
-        print "Clearing all company names..." if @verbose
-        Person.update_all company_name: nil
+        print "Clearing previous sessions..." if @verbose
+        Person.update_all company_name: nil, status_code: nil
         puts 'done' if @verbose
 
         puts "Starting classification..." if @verbose
@@ -42,7 +42,7 @@ class DetermineCompany
 
             # Try to find it in the cache
             if @cache[:email].include? person.email
-                store_result(person, @cache[:email][person.email])
+                store_result(person, :cache, @cache[:email][person.email])
                 next
             end
 
@@ -86,7 +86,7 @@ class DetermineCompany
                     candidate_name = companies['name'] if companies['name'].length < candidate_name.length
                 end
 
-                store_result(person, candidate_name)
+                store_result(person, :linkedin, candidate_name)
                 next
             end
 
@@ -102,7 +102,7 @@ class DetermineCompany
 
                 # Store result if successful
                 if company_name
-                    store_result(person, company_name)
+                    store_result(person, :whois, company_name)
                     next
                 end
             end
@@ -110,12 +110,12 @@ class DetermineCompany
             # Attempt: find the company name on their website
             company_name = find_company_name_on root_domain
             if company_name
-                store_result(person, company_name)
+                store_result(person, :website, company_name)
                 next
             end
             
             # Attempt: last resort, extract most-significant domain part and capitalize
-            store_result(person, PublicSuffix.parse(domain).sld)
+            store_result(person, :domain, PublicSuffix.parse(domain).sld)
         end
 
         # Report success
@@ -124,7 +124,7 @@ class DetermineCompany
 
     private
 
-    def store_result person, name
+    def store_result person, success_code, name
         # Always truncate to match max field length (45)
         name = name[0..40]
 
@@ -132,14 +132,14 @@ class DetermineCompany
         @cache[:email][person.email] = name
 
         # Write to database
-        person.update_attribute 'company_name', name
+        person.update_attributes company_name: name, status_code: success_code
 
         # Output result
         puts "#{person.email} works at #{name}" if @verbose
     end
 
     def reject person, error_code, message
-        person.update_attribute 'error', error_code
+        person.update_attribute 'status_code', error_code
         puts "#{person.email} rejected: #{message}" if @verbose
     end
 

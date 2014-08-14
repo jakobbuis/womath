@@ -115,7 +115,7 @@ class DetermineCompany
             end
             
             # Attempt: last resort, extract most-significant domain part and capitalize
-            store_result(person, :domain, PublicSuffix.parse(domain).sld)
+            store_result(person, :domain, PublicSuffix.parse(domain).sld.capitalize)
         end
 
         # Report success

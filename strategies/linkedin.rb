@@ -20,8 +20,10 @@ class LinkedIn
         companies = JSON.parse(response.body)['values']
      
         # Use the shortest one (deals with things like ["Microsoft", "Microsoft India", "Microsoft France"])
-        companies.reduce do |name, company|
+        best_guess = companies.reduce do |name, company|
             name.length > company['name'].length ? name : company['name']
         end 
+
+        best_guess[:name]
     end
 end

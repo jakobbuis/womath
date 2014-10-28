@@ -32,6 +32,7 @@ class DetermineCompany
             # Execute all strategies
             strategies = [LinkedIn.new, Whois.new, Website.new, Domain.new]
             results = strategies.map { |s| s.execute domain }
+            results.flatten!
 
             # Purge all strategies which could not give a solid answer
             results.reject! &:blank?

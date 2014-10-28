@@ -15,16 +15,17 @@ class DetermineCompany
 
     def initialize options
         @verbose = options[:verbose]
+        @clean_sweep = options[:clean_sweep]
         @known_email_providers = options[:known_email_providers]
         @cache = {}
         @strategies = [LinkedIn.new, Whois.new, Website.new, Domain.new]
     end
 
     def execute
-        clean_previous_results!
+        clean_previous_results! if @clean_sweep
 
         puts "Starting classification..." if @verbose
-        Person.find_each do |person|
+        Person.unclassified.find_each do |person|
 
             next unless valid? person
 

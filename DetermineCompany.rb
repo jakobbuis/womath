@@ -3,7 +3,6 @@ require './config.rb'
 require './database.rb'
 require './models/person.rb'
 require 'public_suffix'
-require 'levenshtein'
 
 require './strategies/linkedin.rb'
 require './strategies/whois.rb'
@@ -30,39 +29,39 @@ class DetermineCompany
             domain = /.*@(.*)/.match(person.email)[1]
             root_domain = PublicSuffix.parse(domain).domain
 
-
             # Execute all strategies
             strategies = [LinkedIn.new, Whois.new, Website.new, Domain.new]
-            results = strategies.map do |strategy|
-                {strategy: strategy.name, name: strategy.execute(domain)}
-            end
+            results = strategies.map { |s| s.execute domain }
 
             # Purge all strategies which could not give a solid answer
-            results.reject! { |result| result[:name].blank? }
+            results.reject! &:blank?
 
-            puts results.inspect
+            # Skip if there's no answer
+            next if results.count == 0
 
-            # If we have only one or two results, choose the first one
-            accept(person, results[0][:strategy], results[0][:name]) if results.count < 3
-            next
-            
-            # Calculate average levenshtein distance
-            results.each do |result|
-                total_levenshtein = 0
-                results.each do |r2|
-                    total_levenshtein += Levenshtein.distance(result, r2)
-                end
-                result[:levenshtein] = total_levenshtein / strategies.count
+            # If we have only one valid answer, take that one (obviously)
+            if results.count == 1
+                accept person, results[0]
+                next
             end
 
+            # Merge identical names with weights, merging substrings too
+            # i.e. ["Microsoft", "Microsoft India", "IBM", "Microsoft"] becomes {"Microsoft" => 3, "IBM" => 1}
+            results.sort_by! &:length
+            names = Hash.new(0)
+            results.each do |r|
+                desired_key = r
+                names.each do |name, weight|
+                    if r.include? name
+                        desired_key = name
+                        break
+                    end
+                end
+                names[desired_key] = names[desired_key] + 1
+            end
 
-            # Accept the most central entry
-            best = results.sort! { |a,b| a[:levenshtein] <=> b[:levenshtein] }.slice(0)
-            
-            puts results.inspect
-            puts best
-            
-            accept(person, best[:strategy], best[:name])
+            # Accept the answer with the largest weight
+            accept person, names.max_by { |name, weight| weight }[0]
         end
 
         # Report success
@@ -73,7 +72,7 @@ class DetermineCompany
 
     def clean_previous_results!
         print "Clearing previous sessions..." if @verbose
-        #Person.update_all company_name: nil, status_code: nil
+        Person.update_all company_name: nil, status_code: nil
         puts 'done' if @verbose
     end
 
@@ -110,19 +109,19 @@ class DetermineCompany
         true
     end
 
-    def accept person, success_code, name
+    def accept person, company_name
         # Always truncate to match max field length (45)
-        name = name[0..40]
+        company_name = company_name[0..40]
 
         # Write to database
-        # person.update_attributes company_name: name, status_code: success_code
+        person.update_attribute :company_name, company_name
 
         # Output result
-        puts "#{person.email} works at #{name} (#{success_code})" if @verbose
+        puts "#{person.email} works at #{company_name}" if @verbose
     end
 
     def reject person, error_code, message
-        # person.update_attribute 'status_code', error_code
+        person.update_attribute 'status_code', error_code
         puts "#{person.email} rejected: #{message} (#{error_code})" if @verbose
     end
 end

@@ -16,6 +16,8 @@ class DetermineCompany
     def initialize options
         @verbose = options[:verbose]
         @known_email_providers = options[:known_email_providers]
+        @cache = {}
+        @strategies = [LinkedIn.new, Whois.new, Website.new, Domain.new]
     end
 
     def execute
@@ -28,11 +30,15 @@ class DetermineCompany
 
             # Extract domain
             domain = /.*@(.*)/.match(person.email)[1]
-            root_domain = PublicSuffix.parse(domain).domain
+
+            # Check cache for previously stored solution
+            if @cache[domain]
+                accept person, @cache[domain]
+                next
+            end
 
             # Execute all strategies
-            strategies = [LinkedIn.new, Whois.new, Website.new, Domain.new]
-            results = strategies.map { |s| s.execute domain }
+            results = @strategies.map { |s| s.execute domain }
             results.flatten!
 
             # Purge all strategies which could not give a solid answer
@@ -44,6 +50,7 @@ class DetermineCompany
             # If we have only one valid answer, take that one (obviously)
             if results.count == 1
                 accept person, results[0]
+                @cache[domain] = results[0]
                 next
             end
 
@@ -64,7 +71,9 @@ class DetermineCompany
             end
 
             # Accept the answer with the largest weight
-            accept person, names.max_by { |name, weight| weight }[0]
+            answer = names.max_by { |name, weight| weight }[0]
+            accept person, answer
+            @cache[domain] = answer
         end
 
         # Report success

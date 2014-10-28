@@ -3,6 +3,7 @@ require './config.rb'
 require './database.rb'
 require './models/person.rb'
 require 'public_suffix'
+require 'levenshtein'
 
 require './strategies/linkedin.rb'
 require './strategies/whois.rb'
@@ -48,12 +49,13 @@ class DetermineCompany
 
             # Merge identical names with weights, merging substrings too
             # i.e. ["Microsoft", "Microsoft India", "IBM", "Microsoft"] becomes {"Microsoft" => 3, "IBM" => 1}
+            # this algorithm also captures typos and very near misses with a levenshtein distance < 3
             results.sort_by! &:length
             names = Hash.new(0)
             results.each do |r|
                 desired_key = r
                 names.each do |name, weight|
-                    if r.include? name
+                    if r.include? name or Levenshtein.distance(r, name) < 3
                         desired_key = name
                         break
                     end

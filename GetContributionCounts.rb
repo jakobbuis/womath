@@ -15,9 +15,16 @@ class GetContributionCounts
     end
 
     def execute!
-        People.where.not(company_name: nil)  do |person|
-            print "\"#{person.name}\", \"#{getContribution(person)}\"\n"
+        entries = Person.where('commits_count IS NULL and company_name IS NOT NULL')
+        count = entries.count
+        puts "Processing #{count} entries..."
+        entries.each do |person|
+            person.update_attribute :commits_count, getContribution(person)
+            count = count - 1
+
+            puts "#{count} entries to go" if count % 100 === 0
         end
+        puts 'All done'
     end
 
     private

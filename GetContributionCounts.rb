@@ -5,7 +5,7 @@ require './database.rb'
 require './models/person.rb'
 
 # Basic class for consuming the API
-class IgnoreLowContributions
+class GetContributionCounts
     include HTTParty
     base_uri 'https://api.github.com'
     headers 'Accept' => 'application/vnd.github.v3+json', 'User-Agent' => 'jakobbuis/womath'
@@ -28,7 +28,7 @@ class IgnoreLowContributions
         commits = 0
         while true
             # Grab a page of repositories
-            response = self.class.get("https://api.github.com/repos/eclipse/#{person.repository}/commits?per_page=100&page=#{page.to_s}", @config)
+            response = self.class.get("https://api.github.com/repos/eclipse/#{person.repository}/commits?per_page=100&page=#{page.to_s}&author=#{person.email}", @config)
 
             # Do not capture repositories that return HTTP errors (empty repositories do this)
             break if response.code >= 400
@@ -58,7 +58,7 @@ end
 
 # Validate input parameters
 instructions = "Usage: ruby GetContributionCounts.rb [-v]\n"
-if ARGV[0].nil? or ARGV[0] == '-h' or ARGV[0] == '--help'
+if ARGV[0] == '-h' or ARGV[0] == '--help'
     puts instructions
     exit 1
 end
@@ -73,4 +73,4 @@ options = {
 }
 
 # Boot the main process
-IgnoreLowContributions.new(options).execute!
+GetContributionCounts.new(options).execute!

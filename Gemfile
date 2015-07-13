@@ -1,6 +1,6 @@
 source 'http://rubygems.org/'
 
-ruby '2.2.0'
+ruby '2.2.2'
 
 gem 'httparty', '~> 0.13.0'
 gem 'activerecord', '~> 4.2.0'
